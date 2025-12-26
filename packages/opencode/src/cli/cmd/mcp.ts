@@ -38,6 +38,7 @@ function getAuthStatusText(status: MCP.AuthStatus): string {
 
 export const McpCommand = cmd({
   command: "mcp",
+  describe: "manage Model Context Protocol (MCP) servers",
   builder: (yargs) =>
     yargs
       .command(McpAddCommand)
