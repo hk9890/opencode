@@ -44,6 +44,7 @@ export namespace Log {
     print: boolean
     dev?: boolean
     level?: Level
+    file?: string
   }
 
   let logpath = ""
@@ -59,12 +60,15 @@ export namespace Log {
     if (options.level) level = options.level
     cleanup(Global.Path.log)
     if (options.print) return
-    logpath = path.join(
-      Global.Path.log,
-      options.dev ? "dev.log" : new Date().toISOString().split(".")[0].replace(/:/g, "") + ".log",
-    )
+    const reusing = !!options.file
+    logpath =
+      options.file ??
+      path.join(
+        Global.Path.log,
+        options.dev ? "dev.log" : new Date().toISOString().split(".")[0].replace(/:/g, "") + ".log",
+      )
     const logfile = Bun.file(logpath)
-    await fs.truncate(logpath).catch(() => {})
+    if (!reusing) await fs.truncate(logpath).catch(() => {})
     const writer = logfile.writer()
     write = async (msg: any) => {
       const num = writer.write(msg)

@@ -14,6 +14,7 @@ await Log.init({
     if (Installation.isLocal()) return "DEBUG"
     return "INFO"
   })(),
+  file: process.env.OPENCODE_LOG_FILE || undefined,
 })
 
 process.on("unhandledRejection", (e) => {
