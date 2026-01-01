@@ -63,9 +63,12 @@ export const TuiThreadCommand = cmd({
     }
 
     const worker = new Worker(workerPath, {
-      env: Object.fromEntries(
-        Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
-      ),
+      env: {
+        ...Object.fromEntries(
+          Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
+        ),
+        OPENCODE_LOG_FILE: Log.file(),
+      },
     })
     worker.onerror = (e) => {
       Log.Default.error(e)
