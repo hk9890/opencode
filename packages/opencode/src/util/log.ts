@@ -126,7 +126,11 @@ export namespace Log {
       const next = new Date()
       const diff = next.getTime() - last
       last = next.getTime()
-      return [next.toISOString().split(".")[0], "+" + diff + "ms", prefix, message].filter(Boolean).join(" ") + "\n"
+      return (
+        [next.toISOString().split(".")[0], "+" + diff + "ms", "pid=" + process.pid, prefix, message]
+          .filter(Boolean)
+          .join(" ") + "\n"
+      )
     }
     const result: Logger = {
       debug(message?: any, extra?: Record<string, any>) {

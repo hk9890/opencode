@@ -11,6 +11,11 @@ import { Flag } from "../flag/flag"
 export namespace Plugin {
   const log = Log.create({ service: "plugin" })
 
+  export type Info = {
+    name: string
+    version: string
+  }
+
   const state = Instance.state(async () => {
     const client = createOpencodeClient({
       baseUrl: "http://localhost:4096",
@@ -18,7 +23,8 @@ export namespace Plugin {
       fetch: async (...args) => Server.App().fetch(...args),
     })
     const config = await Config.get()
-    const hooks = []
+    const hooks: Hooks[] = []
+    const infos: Info[] = []
     const input: PluginInput = {
       client,
       project: Instance.project,
@@ -27,28 +33,50 @@ export namespace Plugin {
       serverUrl: Server.url(),
       $: Bun.$,
     }
+
+    const disabled = new Set(config.disabled_plugins ?? [])
+    const enabled = config.enabled_plugins ? new Set(config.enabled_plugins) : null
+
+    function isPluginAllowed(pluginName: string): boolean {
+      if (enabled && !enabled.has(pluginName)) return false
+      if (disabled.has(pluginName)) return false
+      return true
+    }
+
     const plugins = [...(config.plugin ?? [])]
     if (!Flag.OPENCODE_DISABLE_DEFAULT_PLUGINS) {
       plugins.push("opencode-copilot-auth@0.0.9")
       plugins.push("opencode-anthropic-auth@0.0.5")
     }
     for (let plugin of plugins) {
+      // Extract plugin name and version for filtering (handle versioned names like "pkg@1.0.0")
+      const lastAtIndex = plugin.lastIndexOf("@")
+      const pluginName = lastAtIndex > 0 ? plugin.substring(0, lastAtIndex) : plugin
+      const pluginVersion = lastAtIndex > 0 ? plugin.substring(lastAtIndex + 1) : "latest"
+      if (!isPluginAllowed(pluginName)) {
+        log.info("skipping disabled plugin", { plugin: pluginName })
+        continue
+      }
       log.info("loading plugin", { path: plugin })
-      if (!plugin.startsWith("file://")) {
-        const lastAtIndex = plugin.lastIndexOf("@")
-        const pkg = lastAtIndex > 0 ? plugin.substring(0, lastAtIndex) : plugin
-        const version = lastAtIndex > 0 ? plugin.substring(lastAtIndex + 1) : "latest"
-        plugin = await BunProc.install(pkg, version)
+      // Track if this is a local file plugin
+      const isLocalFile = plugin.startsWith("file://")
+      if (!isLocalFile) {
+        plugin = await BunProc.install(pluginName, pluginVersion)
       }
       const mod = await import(plugin)
       for (const [_name, fn] of Object.entries<PluginInstance>(mod)) {
         const init = await fn(input)
         hooks.push(init)
       }
+      infos.push({
+        name: isLocalFile ? plugin : pluginName,
+        version: isLocalFile ? "local" : pluginVersion,
+      })
     }
 
     return {
       hooks,
+      infos,
       input,
     }
   })
@@ -72,6 +100,10 @@ export namespace Plugin {
 
   export async function list() {
     return state().then((x) => x.hooks)
+  }
+
+  export async function listInfo() {
+    return state().then((x) => x.infos)
   }
 
   export async function init() {
