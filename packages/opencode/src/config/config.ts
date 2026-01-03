@@ -178,6 +178,16 @@ export namespace Config {
       result.compaction = { ...result.compaction, prune: false }
     }
 
+    // Apply CLI flag overrides for plugin settings
+    if (Flag.OPENCODE_DISABLED_PLUGINS) {
+      const cliDisabled = Flag.OPENCODE_DISABLED_PLUGINS.split(",").map((p) => p.trim())
+      result.disabled_plugins = [...(result.disabled_plugins ?? []), ...cliDisabled]
+    }
+    if (Flag.OPENCODE_ENABLED_PLUGINS) {
+      const cliEnabled = Flag.OPENCODE_ENABLED_PLUGINS.split(",").map((p) => p.trim())
+      result.enabled_plugins = cliEnabled
+    }
+
     return {
       config: result,
       directories,

@@ -58,6 +58,14 @@ const cli = yargs(hideBin(process.argv))
     type: "string",
     choices: ["DEBUG", "INFO", "WARN", "ERROR"],
   })
+  .option("disabled-plugins", {
+    describe: "disable specific plugins (comma-separated)",
+    type: "string",
+  })
+  .option("enabled-plugins", {
+    describe: "enable only specific plugins (comma-separated)",
+    type: "string",
+  })
   .middleware(async (opts) => {
     await Log.init({
       print: process.argv.includes("--print-logs"),
@@ -71,6 +79,13 @@ const cli = yargs(hideBin(process.argv))
 
     process.env.AGENT = "1"
     process.env.OPENCODE = "1"
+
+    if (opts.disabledPlugins) {
+      process.env.OPENCODE_DISABLED_PLUGINS = opts.disabledPlugins as string
+    }
+    if (opts.enabledPlugins) {
+      process.env.OPENCODE_ENABLED_PLUGINS = opts.enabledPlugins as string
+    }
 
     Log.Default.info("opencode", {
       version: Installation.VERSION,
