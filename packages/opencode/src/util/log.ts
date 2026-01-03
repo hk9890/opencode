@@ -78,6 +78,9 @@ export namespace Log {
   }
 
   async function cleanup(dir: string) {
+    const maxLogs = parseInt(process.env.OPENCODE_LOG_RETENTION ?? "10", 10)
+    if (isNaN(maxLogs) || maxLogs <= 0) return
+
     const glob = new Bun.Glob("????-??-??T??????.log")
     const files = await Array.fromAsync(
       glob.scan({
@@ -85,9 +88,9 @@ export namespace Log {
         absolute: true,
       }),
     )
-    if (files.length <= 5) return
+    if (files.length <= maxLogs) return
 
-    const filesToDelete = files.slice(0, -10)
+    const filesToDelete = files.slice(0, -maxLogs)
     await Promise.all(filesToDelete.map((file) => fs.unlink(file).catch(() => {})))
   }
 
