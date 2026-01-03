@@ -1,14 +1,10 @@
-import z from "zod"
 import { EOL } from "os"
+import z from "zod"
 import { NamedError } from "@opencode-ai/util/error"
+import { Banner } from "../banner"
 
 export namespace UI {
-  const LOGO = [
-    [`                    `, `             ▄     `],
-    [`█▀▀█ █▀▀█ █▀▀█ █▀▀▄ `, `█▀▀▀ █▀▀█ █▀▀█ █▀▀█`],
-    [`█░░█ █░░█ █▀▀▀ █░░█ `, `█░░░ █░░█ █░░█ █▀▀▀`],
-    [`▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀ `, `▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀`],
-  ]
+  const banner = Banner.load().lines
 
   export const CancelledError = NamedError.create("UICancelledError", z.void())
 
@@ -48,7 +44,7 @@ export namespace UI {
 
   export function logo(pad?: string) {
     const result = []
-    for (const row of LOGO) {
+    for (const row of banner) {
       if (pad) result.push(pad)
       result.push(Bun.color("gray", "ansi"))
       result.push(row[0])

@@ -18,6 +18,11 @@ import {
   type PermissionRequest,
   createOpencodeClient,
 } from "@opencode-ai/sdk/v2/client"
+
+export type Banner = {
+  lines: [string, string][]
+  source: string
+}
 import { createStore, produce, reconcile } from "solid-js/store"
 import { Binary } from "@opencode-ai/util/binary"
 import { retry } from "@opencode-ai/util/retry"
@@ -71,12 +76,14 @@ function createGlobalSync() {
     project: Project[]
     provider: ProviderListResponse
     provider_auth: ProviderAuthResponse
+    banner: Banner
   }>({
     ready: false,
     path: { state: "", config: "", worktree: "", directory: "", home: "" },
     project: [],
     provider: { all: [], connected: [], default: {} },
     provider_auth: {},
+    banner: { lines: [], source: "default" },
   })
 
   const children: Record<string, ReturnType<typeof createStore<State>>> = {}
@@ -454,6 +461,12 @@ function createGlobalSync() {
           setGlobalStore("provider_auth", x.data ?? {})
         }),
       ),
+      fetch(`${globalSDK.url}/banner`)
+        .then((x) => x.json())
+        .then((data: Banner) => {
+          setGlobalStore("banner", data)
+        })
+        .catch(() => {}),
     ])
       .then(() => setGlobalStore("ready", true))
       .catch((e) => setGlobalStore("error", e))
