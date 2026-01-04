@@ -78,11 +78,11 @@ jobs:
             target: x86_64-apple-darwin
           - host: macos-latest
             target: aarch64-apple-darwin
-          - host: ubuntu-latest
+          - host: windows-latest
             target: x86_64-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          - host: ubuntu-latest
+          - host: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
     runs-on: ${{ matrix.settings.host }}
     steps:
@@ -90,24 +90,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.publish.outputs.tag }}
-
-      # Skip Apple signing for forks without certificates
-      - uses: apple-actions/import-codesign-certs@v2
-        if: ${{ runner.os == 'macOS' && secrets.APPLE_CERTIFICATE != '' }}
-        continue-on-error: true
-        with:
-          keychain: build
-          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
-          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-
-      - name: Verify Certificate
-        if: ${{ runner.os == 'macOS' && secrets.APPLE_CERTIFICATE != '' }}
-        continue-on-error: true
-        run: |
-          CERT_INFO=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application") || true
-          CERT_ID=$(echo "$CERT_INFO" | awk -F'"' '{print $2}') || true
-          echo "CERT_ID=$CERT_ID" >> $GITHUB_ENV
-          echo "Certificate imported (if available)."
 
       - run: git fetch --force --tags
 
