@@ -3,9 +3,15 @@ import { $ } from "bun"
 import pkg from "../package.json"
 import { Script } from "@opencode-ai/script"
 import { fileURLToPath } from "url"
+import buildConfig from "../../../build.config"
 
 const dir = fileURLToPath(new URL("..", import.meta.url))
 process.chdir(dir)
+
+// Check if npm publishing is enabled (disabled for forks by default)
+const PUBLISH_NPM = Bun.env.OPENCODE_PUBLISH_NPM === "true"
+// Check if docker publishing is enabled (disabled for forks by default)
+const PUBLISH_DOCKER = Bun.env.OPENCODE_PUBLISH_DOCKER === "true"
 
 const { binaries } = await import("./build.ts")
 {
@@ -36,20 +42,25 @@ await Bun.file(`./dist/${pkg.name}/package.json`).write(
   ),
 )
 
-const tags = [Script.channel]
+// npm publishing (disabled for forks)
+if (PUBLISH_NPM) {
+  const tags = [Script.channel]
 
-const tasks = Object.entries(binaries).map(async ([name]) => {
-  if (process.platform !== "win32") {
-    await $`chmod -R 755 .`.cwd(`./dist/${name}`)
-  }
-  await $`bun pm pack`.cwd(`./dist/${name}`)
+  const tasks = Object.entries(binaries).map(async ([name]) => {
+    if (process.platform !== "win32") {
+      await $`chmod -R 755 .`.cwd(`./dist/${name}`)
+    }
+    await $`bun pm pack`.cwd(`./dist/${name}`)
+    for (const tag of tags) {
+      await $`npm publish *.tgz --access public --tag ${tag}`.cwd(`./dist/${name}`)
+    }
+  })
+  await Promise.all(tasks)
   for (const tag of tags) {
-    await $`npm publish *.tgz --access public --tag ${tag}`.cwd(`./dist/${name}`)
+    await $`cd ./dist/${pkg.name} && bun pm pack && npm publish *.tgz --access public --tag ${tag}`
   }
-})
-await Promise.all(tasks)
-for (const tag of tags) {
-  await $`cd ./dist/${pkg.name} && bun pm pack && npm publish *.tgz --access public --tag ${tag}`
+} else {
+  console.log("Skipping npm publish (OPENCODE_PUBLISH_NPM not set)")
 }
 
 if (!Script.preview) {
@@ -62,9 +73,14 @@ if (!Script.preview) {
     }
   }
 
-  const image = "ghcr.io/anomalyco/opencode"
-  const platforms = "linux/amd64,linux/arm64"
-  const tags = [`${image}:${Script.version}`, `${image}:latest`]
-  const tagFlags = tags.flatMap((t) => ["-t", t])
-  await $`docker buildx build --platform ${platforms} ${tagFlags} --push .`
+  // Docker publishing (disabled for forks)
+  if (PUBLISH_DOCKER) {
+    const image = buildConfig.docker.image
+    const platforms = "linux/amd64,linux/arm64"
+    const tags = [`${image}:${Script.version}`, `${image}:latest`]
+    const tagFlags = tags.flatMap((t) => ["-t", t])
+    await $`docker buildx build --platform ${platforms} ${tagFlags} --push .`
+  } else {
+    console.log("Skipping docker publish (OPENCODE_PUBLISH_DOCKER not set)")
+  }
 }

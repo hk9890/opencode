@@ -14,6 +14,7 @@ process.chdir(dir)
 
 import pkg from "../package.json"
 import { Script } from "@opencode-ai/script"
+import buildConfig from "../../../build.config"
 
 const singleFlag = process.argv.includes("--single")
 const baselineFlag = process.argv.includes("--baseline")
@@ -145,6 +146,12 @@ for (const item of targets) {
       OPENCODE_WORKER_PATH: workerPath,
       OPENCODE_CHANNEL: `'${Script.channel}'`,
       OPENCODE_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",
+      // Build config - fork-specific settings
+      OPENCODE_GITHUB_REPO: `'${buildConfig.githubRepo}'`,
+      OPENCODE_RELEASES_API: `'${buildConfig.urls.releasesApi}'`,
+      OPENCODE_INSTALL_URL: `'${buildConfig.urls.install}'`,
+      OPENCODE_ISSUES_URL: `'${buildConfig.urls.newBugReport}'`,
+      OPENCODE_DOCKER_IMAGE: `'${buildConfig.docker.image}'`,
     },
   })
 

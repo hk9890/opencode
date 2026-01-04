@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { $ } from "bun"
 import { Script } from "@opencode-ai/script"
+import buildConfig from "../../../build.config"
 
 if (!Script.preview) {
   // Calculate SHA values

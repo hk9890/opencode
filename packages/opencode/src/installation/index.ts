@@ -10,6 +10,12 @@ import { Flag } from "../flag/flag"
 declare global {
   const OPENCODE_VERSION: string
   const OPENCODE_CHANNEL: string
+  // Build config - fork-specific settings
+  const OPENCODE_GITHUB_REPO: string
+  const OPENCODE_RELEASES_API: string
+  const OPENCODE_INSTALL_URL: string
+  const OPENCODE_ISSUES_URL: string
+  const OPENCODE_DOCKER_IMAGE: string
 }
 
 export namespace Installation {
@@ -122,7 +128,7 @@ export namespace Installation {
     let cmd
     switch (method) {
       case "curl":
-        cmd = $`curl -fsSL https://opencode.ai/install | bash`.env({
+        cmd = $`curl -fsSL ${OPENCODE_INSTALL_URL} | bash`.env({
           ...process.env,
           VERSION: target,
         })
@@ -195,7 +201,7 @@ export namespace Installation {
         .then((data: any) => data.version)
     }
 
-    return fetch("https://api.github.com/repos/anomalyco/opencode/releases/latest")
+    return fetch(OPENCODE_RELEASES_API)
       .then((res) => {
         if (!res.ok) throw new Error(res.statusText)
         return res.json()
