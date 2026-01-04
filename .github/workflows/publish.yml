@@ -93,6 +93,15 @@ jobs:
 
       - run: git fetch --force --tags
 
+      - name: Free disk space (ubuntu only)
+        if: contains(matrix.settings.host, 'ubuntu')
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
       - uses: ./.github/actions/setup-bun
 
       - name: install dependencies (ubuntu only)
