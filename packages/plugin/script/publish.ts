@@ -2,6 +2,9 @@
 import { Script } from "@opencode-ai/script"
 import { $ } from "bun"
 
+// Check if npm publishing is enabled (disabled for forks by default)
+const PUBLISH_NPM = Bun.env.OPENCODE_PUBLISH_NPM === "true"
+
 const dir = new URL("..", import.meta.url).pathname
 process.chdir(dir)
 
@@ -17,5 +20,12 @@ for (const [key, value] of Object.entries(pkg.exports)) {
   }
 }
 await Bun.write("package.json", JSON.stringify(pkg, null, 2))
-await $`bun pm pack && npm publish *.tgz --tag ${Script.channel} --access public`
+await $`bun pm pack`
+
+if (PUBLISH_NPM) {
+  await $`npm publish *.tgz --tag ${Script.channel} --access public`
+} else {
+  console.log("Skipping npm publish for plugin (OPENCODE_PUBLISH_NPM not set)")
+}
+
 await Bun.write("package.json", JSON.stringify(original, null, 2))
