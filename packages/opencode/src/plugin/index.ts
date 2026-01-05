@@ -39,6 +39,11 @@ export namespace Plugin {
     const disabled = new Set(config.disabled_plugins ?? [])
     const enabled = config.enabled_plugins ? new Set(config.enabled_plugins) : null
 
+    log.info("plugin filtering config", {
+      disabled_plugins: config.disabled_plugins ?? [],
+      enabled_plugins: config.enabled_plugins ?? null,
+    })
+
     function isPluginAllowed(pluginName: string): boolean {
       if (enabled && !enabled.has(pluginName)) return false
       if (disabled.has(pluginName)) return false
@@ -49,11 +54,13 @@ export namespace Plugin {
     if (!Flag.OPENCODE_DISABLE_DEFAULT_PLUGINS) {
       plugins.push(...BUILTIN)
     }
+    log.info("plugins to load", { plugins })
     for (let plugin of plugins) {
       // Extract plugin name and version for filtering (handle versioned names like "pkg@1.0.0")
       const lastAtIndex = plugin.lastIndexOf("@")
       const pluginName = lastAtIndex > 0 ? plugin.substring(0, lastAtIndex) : plugin
       const pluginVersion = lastAtIndex > 0 ? plugin.substring(lastAtIndex + 1) : "latest"
+      log.info("checking plugin", { plugin, pluginName, pluginVersion, isDisabled: disabled.has(pluginName) })
       if (!isPluginAllowed(pluginName)) {
         log.info("skipping disabled plugin", { plugin: pluginName })
         continue

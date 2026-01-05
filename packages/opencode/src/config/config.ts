@@ -179,14 +179,29 @@ export namespace Config {
     }
 
     // Apply CLI flag overrides for plugin settings
-    if (Flag.OPENCODE_DISABLED_PLUGINS) {
-      const cliDisabled = Flag.OPENCODE_DISABLED_PLUGINS.split(",").map((p) => p.trim())
+    // Note: Read directly from process.env since Flag values are cached at module load time
+    const disabledPluginsEnv = process.env["OPENCODE_DISABLED_PLUGINS"]
+    const enabledPluginsEnv = process.env["OPENCODE_ENABLED_PLUGINS"]
+    log.info("plugin settings before CLI override", {
+      disabled_plugins: result.disabled_plugins,
+      enabled_plugins: result.enabled_plugins,
+      OPENCODE_DISABLED_PLUGINS: disabledPluginsEnv,
+      OPENCODE_ENABLED_PLUGINS: enabledPluginsEnv,
+    })
+    if (disabledPluginsEnv) {
+      const cliDisabled = disabledPluginsEnv.split(",").map((p) => p.trim())
+      log.info("applying CLI disabled plugins", { cliDisabled })
       result.disabled_plugins = [...(result.disabled_plugins ?? []), ...cliDisabled]
     }
-    if (Flag.OPENCODE_ENABLED_PLUGINS) {
-      const cliEnabled = Flag.OPENCODE_ENABLED_PLUGINS.split(",").map((p) => p.trim())
+    if (enabledPluginsEnv) {
+      const cliEnabled = enabledPluginsEnv.split(",").map((p) => p.trim())
+      log.info("applying CLI enabled plugins", { cliEnabled })
       result.enabled_plugins = cliEnabled
     }
+    log.info("plugin settings after CLI override", {
+      disabled_plugins: result.disabled_plugins,
+      enabled_plugins: result.enabled_plugins,
+    })
 
     return {
       config: result,
